@@ -1,3 +1,4 @@
+// lib/models/crypto_model.dart
 class Crypto {
   final String id;
   final String symbol;
@@ -17,7 +18,7 @@ class Crypto {
     required this.priceChangePercentage24h,
   });
 
-   factory Crypto.fromJson(Map<String, dynamic> json) {
+  factory Crypto.fromJson(Map<String, dynamic> json) {
     return Crypto(
       id: json['id'],
       symbol: json['symbol'],
