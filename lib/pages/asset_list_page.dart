@@ -1,7 +1,9 @@
+// lib/pages/asset_list_page.dart
 import 'package:flutter/material.dart';
-import 'package:invest_app/pages/asset_detail_page.dart';
-import 'package:invest_app/services/api_service.dart'; // Import API Service
-import 'package:invest_app/models/crypto_model.dart'; // Import Model
+import 'package:invest_app/services/api_service.dart';
+import 'package:invest_app/models/crypto_model.dart';
+import 'package:invest_app/utils/constants.dart';
+import 'package:invest_app/widgets/asset_card.dart'; // Import AssetCard
 
 class AssetListPage extends StatefulWidget {
   const AssetListPage({super.key});
@@ -16,50 +18,31 @@ class _AssetListPageState extends State<AssetListPage> {
   @override
   void initState() {
     super.initState();
-    futureCryptos = ApiService().fetchCryptos(); // Panggil API saat inisialisasi
+    futureCryptos = ApiService().fetchCryptos();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Daftar Aset'),
-        automaticallyImplyLeading: false, // Sembunyikan tombol kembali di tab
+        title: const Text(AppConstants.assetListTitle),
+        automaticallyImplyLeading: false,
       ),
-
-       body: FutureBuilder<List<Crypto>>(
+      body: FutureBuilder<List<Crypto>>(
         future: futureCryptos,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return Center(child: Text('${AppConstants.apiErrorMessage}${snapshot.error}'));
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('Tidak ada data aset.'));
+            return const Center(child: Text(AppConstants.noDataMessage));
           } else {
             return ListView.builder(
               itemCount: snapshot.data!.length,
               itemBuilder: (context, index) {
                 Crypto crypto = snapshot.data![index];
-                return Card(
-                  margin: const EdgeInsets.all(8.0),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundImage: NetworkImage(crypto.image),
-                    ),
-                    title: Text(crypto.name),
-                    subtitle: Text('Harga: \$${crypto.currentPrice.toStringAsFixed(2)}'),
-                    onTap: () {
-                      // Navigasi ke halaman detail saat item diklik
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => AssetDetailPage(crypto: crypto),
-                        ),
-                      );
-                    },
-                  ),
-                );
+                return AssetCard(crypto: crypto);
               },
             );
           }
