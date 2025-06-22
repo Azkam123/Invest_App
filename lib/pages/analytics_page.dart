@@ -5,32 +5,27 @@ class AnalyticsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Analisis Pasar'),
-        automaticallyImplyLeading: false, // Sembunyikan tombol kembali
-      ),
-      body: const Center(
-        child: Padding(
-          padding: EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.bar_chart, size: 80, color: Colors.blueAccent),
-              SizedBox(height: 20),
-              Text(
-                'Lihat Grafik & Analisis Pasar di Sini!',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 10),
-              Text(
-                'Fitur grafik interaktif dan data historis akan segera hadir.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: Colors.grey),
-              ),
-            ],
-          ),
+    // HAPUS Scaffold dan AppBar dari sini. Hanya kembalikan isi body-nya.
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.bar_chart, size: 80, color: Colors.blueAccent),
+            SizedBox(height: 20),
+            Text(
+              'Lihat Grafik & Analisis Pasar di Sini!',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 10),
+            Text(
+              'Fitur grafik interaktif dan data historis akan segera hadir.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+          ],
         ),
       ),
     );

@@ -23,31 +23,26 @@ class _AssetListPageState extends State<AssetListPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(AppConstants.assetListTitle),
-        automaticallyImplyLeading: false,
-      ),
-      body: FutureBuilder<List<Crypto>>(
-        future: futureCryptos,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('${AppConstants.apiErrorMessage}${snapshot.error}'));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text(AppConstants.noDataMessage));
-          } else {
-            return ListView.builder(
-              itemCount: snapshot.data!.length,
-              itemBuilder: (context, index) {
-                Crypto crypto = snapshot.data![index];
-                return AssetCard(crypto: crypto);
-              },
-            );
-          }
-        },
-      ),
+    // HAPUS Scaffold dan AppBar dari sini. Hanya kembalikan isi body-nya.
+    return FutureBuilder<List<Crypto>>(
+      future: futureCryptos,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Center(child: Text('${AppConstants.apiErrorMessage}${snapshot.error}'));
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(child: Text(AppConstants.noDataMessage));
+        } else {
+          return ListView.builder(
+            itemCount: snapshot.data!.length,
+            itemBuilder: (context, index) {
+              Crypto crypto = snapshot.data![index];
+              return AssetCard(crypto: crypto);
+            },
+          );
+        }
+      },
     );
   }
 }
