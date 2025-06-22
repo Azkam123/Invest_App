@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:invest_app/pages/home_page.dart';
 import 'package:invest_app/pages/asset_list_page.dart';
+import 'package:invest_app/pages/analytics_page.dart'; // Import halaman baru
 import 'package:invest_app/pages/profile_page.dart';
+import 'package:invest_app/utils/constants.dart';
 
 void main() {
   runApp(const MyApp());
@@ -13,7 +15,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Aplikasi Investasi',
+      title: AppConstants.appName, // Menggunakan konstanta
       theme: ThemeData(
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
@@ -37,9 +39,9 @@ class _MainScreenState extends State<MainScreen> {
     const HomePage(),
     const AssetListPage(),
     const ProfilePage(),
-    // AssetDetailPage tidak langsung di tab, tapi diakses dari AssetListPage
   ];
- void _onItemTapped(int index) {
+
+  void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
@@ -49,7 +51,7 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Aplikasi Investasi'),
+        title: const Text(AppConstants.appName), // Menggunakan konstanta
       ),
       body: Center(
         child: _widgetOptions.elementAt(_selectedIndex),
@@ -63,6 +65,10 @@ class _MainScreenState extends State<MainScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.list),
             label: 'Aset',
+            ),
+          BottomNavigationBarItem( // TOMBOL BARU: Analisis
+            icon: Icon(Icons.bar_chart),
+            label: 'Analisis',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
