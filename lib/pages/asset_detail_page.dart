@@ -1,9 +1,9 @@
 // lib/pages/asset_detail_page.dart
 import 'package:flutter/material.dart';
-import 'package:invest_app/models/crypto_model.dart'; // Import model
+import 'package:invest_app/models/crypto_model.dart';
 
 class AssetDetailPage extends StatelessWidget {
-  final Crypto crypto; // Menerima objek crypto dari halaman sebelumnya
+  final Crypto crypto;
 
   const AssetDetailPage({super.key, required this.crypto});
 
@@ -23,6 +23,9 @@ class AssetDetailPage extends StatelessWidget {
                 crypto.image,
                 height: 100,
                 width: 100,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(Icons.currency_bitcoin, size: 100, color: Colors.grey); // Placeholder jika gambar gagal dimuat
+                },
               ),
             ),
             const SizedBox(height: 20),
@@ -40,7 +43,6 @@ class AssetDetailPage extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text('Kapitalisasi Pasar: \$${crypto.marketCap.toStringAsFixed(2)}'),
-            // Anda bisa menambahkan lebih banyak detail di sini, seperti grafik, deskripsi, dll.
           ],
         ),
       ),
