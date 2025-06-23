@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:invest_app/models/crypto_model.dart';
 import 'package:invest_app/utils/constants.dart';
+import 'package:invest_app/models/crypto_detail_model.dart';
 
 // Kelas untuk menangani kesalahan khusus API
 class ApiException implements Exception {
@@ -20,7 +21,6 @@ class ApiException implements Exception {
 class ApiService { // Pastikan nama kelas ini "ApiService"
   final String _baseUrl = AppConstants.coinGeckoBaseUrl;
 
-  // Metode umum untuk melakukan request GET ke API
   Future<dynamic> _get(String endpoint, {Map<String, dynamic>? queryParameters}) async {
     final uri = Uri.parse('$_baseUrl$endpoint').replace(queryParameters: queryParameters);
 
@@ -45,7 +45,6 @@ class ApiService { // Pastikan nama kelas ini "ApiService"
     }
   }
 
-  // Mengambil daftar mata uang kripto
   Future<List<Crypto>> fetchCryptos() async {
     try {
       final responseData = await _get(
@@ -71,8 +70,7 @@ class ApiService { // Pastikan nama kelas ini "ApiService"
     }
   }
 
-  // Contoh metode lain (misal: mengambil detail kripto)
-  Future<Crypto> fetchCryptoDetail(String id) async {
+  Future<CryptoDetail> fetchCryptoDetail(String id) async {
     try {
       final responseData = await _get(
         '/coins/$id',
@@ -85,7 +83,7 @@ class ApiService { // Pastikan nama kelas ini "ApiService"
           'sparkline': 'true'
         },
       );
-      return Crypto.fromJson(responseData);
+      return CryptoDetail.fromJson(responseData);
     } on ApiException {
       rethrow;
     } catch (e) {
