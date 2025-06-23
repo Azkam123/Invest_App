@@ -21,7 +21,7 @@ class _HomePageState extends State<HomePage> {
     _topCryptosFuture = ApiService().fetchCryptos();
   }
 
- @override
+@override
   Widget build(BuildContext context) {
     // HAPUS Scaffold dan AppBar dari sini. Hanya kembalikan isi body-nya.
     return SingleChildScrollView(
