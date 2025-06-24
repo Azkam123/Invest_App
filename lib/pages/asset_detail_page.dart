@@ -4,7 +4,8 @@ import 'package:invest_app/models/crypto_model.dart';
 import 'package:invest_app/models/crypto_detail_model.dart';
 import 'package:invest_app/services/api_service.dart';
 import 'package:invest_app/utils/constants.dart';
-// import 'dart:developer'; // Hapus atau komen baris ini karena tidak digunakan lagi
+import 'package:invest_app/models/news_article_model.dart';
+import 'package:url_launcher/url_launcher.dart'; // Pastikan url_launcher sudah di pubspec.yaml
 
 class AssetDetailPage extends StatefulWidget {
   final Crypto crypto;
@@ -18,11 +19,47 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
   late Future<CryptoDetail> _cryptoDetailFuture;
   late TabController _tabController;
 
+  late Future<List<NewsArticle>> _newsFuture;
+  late Future<List<NewsArticle>> _analysisFuture;
+
+  // URL untuk halaman trading Dupoin
+  final String _dupoinTradingUrl = 'https://www.dupoin.co.id/promotion/pasar-finansial/?utm_source=investing&utm_campaign&subID=ENID_Dupoin_FCTradeNowA_Fluid_NGRST3774215681_OA_DFP__31a647279cd4d61a-1750674547411';
+
   @override
   void initState() {
     super.initState();
     _cryptoDetailFuture = ApiService().fetchCryptoDetail(widget.crypto.id);
     _tabController = TabController(length: 4, vsync: this);
+
+    _newsFuture = ApiService().fetchCryptoNews(widget.crypto.name);
+    _analysisFuture = ApiService().fetchCryptoAnalysis(widget.crypto.name);
+  }
+
+  Future<void> _refreshNews() async {
+    setState(() {
+      _newsFuture = ApiService().fetchCryptoNews(widget.crypto.name);
+    });
+  }
+
+  Future<void> _refreshAnalysis() async {
+    setState(() {
+      _analysisFuture = ApiService().fetchCryptoAnalysis(widget.crypto.name);
+    });
+  }
+
+  // Fungsi untuk membuka URL
+  Future<void> _launchURL(String url) async {
+    final Uri uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      // Pastikan widget masih terpasang sebelum menggunakan context
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not open link: $url')),
+      );
+      debugPrint('Could not launch $url'); // Gunakan debugPrint untuk logging
+    }
   }
 
   @override
@@ -124,7 +161,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
                           ],
                         ),
                       ),
-                      const Divider(),
+                      const Divider(), // Added 'const' here
 
                       Container(
                         height: 200,
@@ -133,7 +170,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
                           child: detail.sparklineIn7dPrices != null && detail.sparklineIn7dPrices!.isNotEmpty
                               ? CustomPaint(
                                   painter: SparklinePainter(detail.sparklineIn7dPrices!),
-                                  child: Container(),
+                                  child: const SizedBox.expand(), // Using const SizedBox.expand()
                                 )
                               : const Text(
                                   'Grafik Harga Akan Muncul di Sini',
@@ -146,7 +183,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
-                          _buildTimePeriodButton('1D'), // Panggilan sudah benar
+                          _buildTimePeriodButton('1D'),
                           _buildTimePeriodButton('1W'),
                           _buildTimePeriodButton('1M'),
                           _buildTimePeriodButton('1Y'),
@@ -162,9 +199,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Fitur Trading belum diimplementasikan!')),
-                              );
+                              _launchURL(_dupoinTradingUrl); // Start Trading button action
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.green,
@@ -187,7 +222,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildDetailRow('Day\'s Range', '\$${detail.low24h.toStringAsFixed(2)} - \$${detail.high24h.toStringAsFixed(2)}'), // Panggilan sudah benar
+                            _buildDetailRow('Day\'s Range', '\$${detail.low24h.toStringAsFixed(2)} - \$${detail.high24h.toStringAsFixed(2)}'),
                             _buildDetailRow('52wk Range', 'N/A'),
                             _buildDetailRow('Previous Close', 'N/A'),
                             _buildDetailRow('Market Cap', '\$${detail.marketCap.toStringAsFixed(2)}'),
@@ -202,9 +237,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Fitur Trading belum diimplementasikan!')),
-                              );
+                              _launchURL(_dupoinTradingUrl); // Start Trading button action (duplicate)
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.green,
@@ -226,9 +259,9 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
                 ),
                 // TAB 2: Technical
                 _buildTechnicalTab(),
-                // TAB 3: News
+                // TAB 3: News (diperbarui)
                 _buildNewsTab(),
-                // TAB 4: Analysis
+                // TAB 4: Analysis (diperbarui)
                 _buildAnalysisTab(),
               ],
             );
@@ -237,8 +270,6 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
       ),
     );
   }
-
-  // **** Metode Pembantu berada di SINI, di dalam _AssetDetailPageState ****
 
   // Metode pembantu untuk tombol periode waktu
   Widget _buildTimePeriodButton(String text) {
@@ -380,7 +411,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
             ),
           ),
           const SizedBox(height: 20),
-          _buildBuySellButtons(),
+          _buildBuySellButtons(), // Buy/Sell buttons
         ],
       ),
     );
@@ -414,7 +445,6 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              // Perbaikan untuk deprecated withOpacity
               color: isGreen ? Colors.green.withAlpha((255 * 0.2).round()) : (isRed ? Colors.red.withAlpha((255 * 0.2).round()) : Colors.transparent),
               borderRadius: BorderRadius.circular(5),
               border: Border.all(color: statusColor),
@@ -455,7 +485,6 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
       width: MediaQuery.of(context).size.width / 3 - 20,
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        // Perbaikan untuk deprecated withOpacity
         color: color.withAlpha((255 * 0.1).round()),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: color),
@@ -470,173 +499,209 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
     );
   }
 
-  // **** Widget untuk Tab News ****
+  // **** Widget untuk Tab News (Diperbarui dengan FutureBuilder dan RefreshIndicator) ****
   Widget _buildNewsTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildNewsItem(
-            'Bitcoin price today: falls to \$101k as US-Iran attack batter...',
-            'Investing.com',
-            '4h ago',
-            'https://via.placeholder.com/100',
-          ),
-          _buildNewsItem(
-            'Bitcoin falls 4% to \$99,237',
-            'Reuters',
-            '19h ago',
-            'https://via.placeholder.com/100',
-          ),
-          _buildNewsItem(
-            'DeFi Technologies Engages ShareIntel and Urvin to Enhanc...',
-            'Investing.com',
-            'Jun 21',
-            'https://via.placeholder.com/100',
-          ),
-          _buildNewsItem(
-            'Bitcoin price today: climbs to \$106k; Trump-Iran comman...',
-            'Investing.com',
-            'Jun 20',
-            'https://via.placeholder.com/100',
-          ),
-          _buildNewsItem(
-            'Crypto market sees surge in altcoin trading as Bitcoin ...',
-            'CoinDesk',
-            'Jun 19',
-            'https://via.placeholder.com/100',
-          ),
-        ],
+    return RefreshIndicator(
+      onRefresh: _refreshNews,
+      child: FutureBuilder<List<NewsArticle>>(
+        future: _newsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error loading news: ${snapshot.error}'));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('No news found.'));
+          } else {
+            final newsArticles = snapshot.data!;
+            return ListView.builder(
+              padding: const EdgeInsets.all(16.0),
+              itemCount: newsArticles.length,
+              itemBuilder: (context, index) {
+                final article = newsArticles[index];
+                return _buildNewsItem(
+                  article.title,
+                  article.source,
+                  article.publishedAt,
+                  article.imageUrl,
+                  article.articleUrl,
+                );
+              },
+            );
+          }
+        },
       ),
     );
   }
 
-  Widget _buildNewsItem(String title, String source, String time, String imageUrl) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
-      elevation: 1,
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '$source • $time',
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8.0),
-              child: Image.network(
-                imageUrl,
-                width: 80,
-                height: 80,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  width: 80,
-                  height: 80,
-                  color: Colors.grey[300],
-                  child: const Icon(Icons.image_not_supported, color: Colors.grey),
+  Widget _buildNewsItem(String title, String source, String time, String? imageUrl, String? articleUrl) {
+    return GestureDetector(
+      onTap: () async {
+        if (articleUrl != null) {
+          final uri = Uri.parse(articleUrl);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication); // Menggunakan externalApplication
+          } else {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Could not open link: $articleUrl')),
+            );
+            debugPrint('Could not launch news link: $articleUrl');
+          }
+        }
+      },
+      child: Card(
+        margin: const EdgeInsets.symmetric(vertical: 8.0),
+        elevation: 1,
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '$source • $time',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ],
+              const SizedBox(width: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8.0),
+                child: imageUrl != null && imageUrl.isNotEmpty
+                    ? Image.network(
+                        imageUrl,
+                        width: 80,
+                        height: 80,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          width: 80,
+                          height: 80,
+                          color: Colors.grey[300],
+                          child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                        ),
+                      )
+                    : Container(
+                        width: 80,
+                        height: 80,
+                        color: Colors.grey[300],
+                        child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // **** Widget untuk Tab Analysis ****
+  // **** Widget untuk Tab Analysis (Diperbarui dengan FutureBuilder dan RefreshIndicator) ****
   Widget _buildAnalysisTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildAnalysisItem(
-            'Double Shooting Star - A Pullback in the Making?',
-            'Paulo Celig',
-            '3h ago',
-            'https://via.placeholder.com/100/0000FF/FFFFFF?text=PC',
-          ),
-          _buildAnalysisItem(
-            'Bullish Despite War? Markets Split Between Fear and Optimism',
-            'Geoff Bysshe',
-            '5h ago',
-            'https://via.placeholder.com/100/FF0000/FFFFFF?text=GB',
-          ),
-          _buildAnalysisItem(
-            'Bitcoin Volatility Could Spill Over Into Stock Indices',
-            'Declan Fallon',
-            '5h ago',
-            'https://via.placeholder.com/100/00FF00/FFFFFF?text=DF',
-          ),
-          _buildAnalysisItem(
-            'Bitcoin Holds Firm Above \$105K as Geopolitical Storm Brews',
-            'Prime XBT',
-            'Jun 20',
-            'https://via.placeholder.com/100/FFA500/FFFFFF?text=PX',
-          ),
-          _buildAnalysisItem(
-            'Bitcoin: Calm Above \$105K Signals Accumulation as Bulls Prepare for Upside',
-            'Günay Caymaz',
-            'Jun 20',
-            'https://via.placeholder.com/100/800080/FFFFFF?text=GC',
-          ),
-        ],
+    return RefreshIndicator(
+      onRefresh: _refreshAnalysis,
+      child: FutureBuilder<List<NewsArticle>>(
+        future: _analysisFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error loading analysis: ${snapshot.error}'));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('No analysis found.'));
+          } else {
+            final analysisArticles = snapshot.data!;
+            return ListView.builder(
+              padding: const EdgeInsets.all(16.0),
+              itemCount: analysisArticles.length,
+              itemBuilder: (context, index) {
+                final article = analysisArticles[index];
+                // Menggunakan substring(0,1) untuk mengambil huruf pertama sumber sebagai teks avatar
+                String avatarText = article.source.isNotEmpty ? article.source.substring(0, 1).toUpperCase() : '?';
+                String avatarPlaceholder = 'https://via.placeholder.com/100/A0A0A0/FFFFFF?text=$avatarText'; // Warna abu-abu default
+
+                return _buildAnalysisItem(
+                  article.title,
+                  article.source, // Menggunakan source sebagai "author" untuk contoh ini
+                  article.publishedAt,
+                  avatarPlaceholder, // Menggunakan placeholder avatar
+                  article.articleUrl,
+                );
+              },
+            );
+          }
+        },
       ),
     );
   }
 
-  Widget _buildAnalysisItem(String title, String author, String time, String avatarUrl) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
-      elevation: 1,
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CircleAvatar(
-              radius: 30,
-              backgroundImage: NetworkImage(avatarUrl),
-              onBackgroundImageError: (exception, stackTrace) => const Icon(Icons.person),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '$author • $time',
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ],
+  Widget _buildAnalysisItem(String title, String author, String time, String avatarUrl, String? articleUrl) {
+    return GestureDetector(
+      onTap: () async {
+        if (articleUrl != null) {
+          final uri = Uri.parse(articleUrl);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication); // Menggunakan externalApplication
+          } else {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Could not open link: $articleUrl')),
+            );
+            debugPrint('Could not launch analysis link: $articleUrl');
+          }
+        }
+      },
+      child: Card(
+        margin: const EdgeInsets.symmetric(vertical: 8.0),
+        elevation: 1,
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                radius: 30,
+                backgroundImage: NetworkImage(
+                  avatarUrl,
+                  // onImageError hanya ada pada widget Image, bukan ImageProvider seperti NetworkImage
+                  // Tangani error gambar background pada onBackgroundImageError CircleAvatar
+                ),
+                onBackgroundImageError: (exception, stackTrace) {
+                  debugPrint('Error loading avatar for CircleAvatar: $exception');
+                  // Anda bisa menampilkan placeholder lokal jika diperlukan di sini
+                },
               ),
-            ),
-          ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '$author • $time',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -649,9 +714,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
         Expanded(
           child: ElevatedButton(
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Buy feature not implemented yet!')),
-              );
+              _launchURL('$_dupoinTradingUrl?action=buy'); // Buy button action
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
@@ -670,9 +733,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
         Expanded(
           child: ElevatedButton(
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Sell feature not implemented yet!')),
-              );
+              _launchURL('$_dupoinTradingUrl?action=sell'); // Sell button action
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,

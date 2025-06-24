@@ -1,105 +1,82 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
-import 'package:invest_app/pages/home_page.dart';
-import 'package:invest_app/pages/asset_list_page.dart';
-import 'package:invest_app/pages/analytics_page.dart'; // Pastikan ini diimpor
-import 'package:invest_app/pages/profile_page.dart';
-import 'package:invest_app/utils/constants.dart';
+import 'package:invest_app/pages/onboarding_page.dart'; // Import OnboardingPage
+import 'package:invest_app/widgets/main_app_screen.dart'; // Import MainAppScreen
+// Imports halaman individual (home_page, markets_page, portfolio_page, profile_page)
+// tidak lagi diperlukan di sini karena digunakan di MainAppScreen
 
 void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: AppConstants.appName,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
-      home: const MainScreen(),
-    );
-  }
+  State<MyApp> createState() => _MyAppState();
 }
 
-class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+class _MyAppState extends State<MyApp> {
+  ThemeMode _themeMode = ThemeMode.dark; // Diubah menjadi ThemeMode.dark agar langsung gelap saat startup
+  bool _showOnboarding = true; // State untuk mengontrol tampilan halaman onboarding
 
-  @override
-  State<MainScreen> createState() => _MainScreenState();
-}
-
-class _MainScreenState extends State<MainScreen> {
-  int _selectedIndex = 0; // Pastikan ini diinisialisasi ke 0 (tab pertama)
-
-  // PASTIKAN URUTAN INI SESUAI DENGAN URUTAN BOTTOMNAVBARITEM
-  static final List<Widget> _widgetOptions = <Widget>[
-    const HomePage(),        // Index 0
-    const AssetListPage(),   // Index 1
-    const AnalyticsPage(),   // Index 2 (Halaman baru)
-    const ProfilePage(),     // Index 3
-  ];
-
-  void _onItemTapped(int index) {
+  // Fungsi untuk mengubah tema aplikasi
+  void _setThemeMode(ThemeMode mode) {
     setState(() {
-      _selectedIndex = index; // Memperbarui indeks yang dipilih
+      _themeMode = mode;
+    });
+  }
+
+  // Fungsi untuk menandai bahwa onboarding telah selesai
+  void _completeOnboarding() {
+    setState(() {
+      _showOnboarding = false;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_getAppBarTitle(_selectedIndex)), // Judul AppBar dinamis
+    return MaterialApp(
+      debugShowCheckedModeBanner: false, // Menghilangkan banner "DEBUG"
+      title: 'InvestApp',
+      // Tema Terang
+      theme: ThemeData(
+        brightness: Brightness.light,
+        primarySwatch: Colors.blue,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.blue,
+          foregroundColor: Colors.white,
+        ),
+        scaffoldBackgroundColor: Colors.white,
+        cardColor: Colors.white,
+        textTheme: const TextTheme(
+          bodyLarge: TextStyle(color: Colors.black87),
+          bodyMedium: TextStyle(color: Colors.black54),
+          titleLarge: TextStyle(color: Colors.black87),
+        ),
       ),
-      body: Center(
-        child: _widgetOptions.elementAt(_selectedIndex), // Menampilkan widget sesuai indeks
+      // Tema Gelap
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        primarySwatch: Colors.blueGrey, // Warna primer yang berbeda untuk dark mode
+        scaffoldBackgroundColor: Colors.black, // Latar belakang utama jadi hitam
+        cardColor: Colors.grey[900], // Warna card di dark mode
+        textTheme: const TextTheme(
+          bodyLarge: TextStyle(color: Colors.white),
+          bodyMedium: TextStyle(color: Colors.white70),
+          titleLarge: TextStyle(color: Colors.white),
+        ),
+        appBarTheme: AppBarTheme(
+          backgroundColor: Colors.grey[900], // Warna AppBar untuk dark mode
+          foregroundColor: Colors.white,
+        ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Beranda',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.list),
-            label: 'Aset',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart), // Icon untuk Analisis
-            label: 'Analisis',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profil',
-          ),
-        ],
-        currentIndex: _selectedIndex, // Menentukan item yang aktif
-        selectedItemColor: Colors.amber[800],
-        unselectedItemColor: Colors.grey,
-        onTap: _onItemTapped, // Ketika item diklik, panggil _onItemTapped
-        type: BottomNavigationBarType.fixed, // Penting untuk 4+ item
-      ),
-    );
-  }
+      themeMode: _themeMode, // Menggunakan ThemeMode yang dikelola oleh state
 
-  // Fungsi pembantu untuk mendapatkan judul AppBar berdasarkan indeks
-  String _getAppBarTitle(int index) {
-    switch (index) {
-      case 0:
-        return AppConstants.appName; // Atau 'Beranda' jika ingin lebih spesifik
-      case 1:
-        return AppConstants.assetListTitle;
-      case 2:
-        return 'Analisis Pasar'; // Judul untuk halaman Analisis
-      case 3:
-        return AppConstants.profilePageTitle;
-      default:
-        return AppConstants.appName;
-    }
+      // Menampilkan OnboardingPage jika _showOnboarding true, jika tidak, tampilkan MainAppScreen
+      home: _showOnboarding
+          ? OnboardingPage(onGetStarted: _completeOnboarding, onThemeChanged: _setThemeMode)
+          : MainAppScreen(onThemeChanged: _setThemeMode),
+    );
   }
 }

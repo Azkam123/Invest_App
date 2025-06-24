@@ -8,10 +8,10 @@ class AppConstants {
   // Contoh: static const String alphaVantageApiKey = 'YOUR_ALPHA_VANTAGE_API_KEY';
 
   // --- UI Constants ---
-  static const String appName = 'InvestApp';
+  static const String appName = 'INVESTASI';
   static const String welcomeMessage = 'Selamat Datang, Investor!';
   static const String appDescription = 'Pantau pergerakan pasar dan aset favorit Anda.';
-  static const String cryptoPopularTitle = 'Kripto Populer';
+  static const String cryptoPopularTitle = 'crypto Populer';
   static const String assetListTitle = 'Daftar Aset';
   static const String profilePageTitle = 'Profil Saya';
   static const String marketIndexTitle = 'Indeks Pasar Utama';
@@ -19,7 +19,7 @@ class AppConstants {
   // --- Error Messages ---
   static const String apiErrorMessage = 'Gagal memuat data: ';
   static const String noDataMessage = 'Tidak ada data yang tersedia.';
-  static const String noCryptoDataMessage = 'Tidak ada data kripto.';
+  static const String noCryptoDataMessage = 'Tidak ada data crypto.';
 
   // --- Other Constants ---
   static const int defaultCryptoLimit = 5; // Untuk Home Page

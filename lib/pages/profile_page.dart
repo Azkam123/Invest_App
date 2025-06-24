@@ -2,20 +2,36 @@
 import 'package:flutter/material.dart';
 import 'package:invest_app/utils/constants.dart'; // Import konstanta
 
+// Callback typedef untuk memberi tahu perubahan tema
+typedef ThemeChangedCallback = void Function(ThemeMode themeMode);
+
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  final ThemeChangedCallback onThemeChanged; // <--- PASTIKAN BARIS INI ADA
+  const ProfilePage({super.key, required this.onThemeChanged}); // <--- DAN KONSTRUKTOR SEPERTI INI
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  bool _isDarkModeEnabled = false;
+  // Gunakan ThemeMode untuk melacak mode gelap (light, dark, system)
+  ThemeMode _currentThemeMode = ThemeMode.system; // Default ke sistem
+
+  // State untuk notifikasi
   bool _areNotificationsEnabled = true;
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Inisialisasi _currentThemeMode berdasarkan tema saat ini
+    // Ini penting agar switch mencerminkan mode gelap yang sedang aktif
+    _currentThemeMode = Theme.of(context).brightness == Brightness.dark
+        ? ThemeMode.dark
+        : ThemeMode.light;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // HAPUS Scaffold dan AppBar dari sini. Hanya kembalikan isi body-nya.
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -50,10 +66,13 @@ class _ProfilePageState extends State<ProfilePage> {
             const SizedBox(height: 15),
             SwitchListTile(
               title: const Text('Mode Gelap'),
-              value: _isDarkModeEnabled,
+              // Sesuaikan value dengan _currentThemeMode
+              value: _currentThemeMode == ThemeMode.dark,
               onChanged: (bool value) {
                 setState(() {
-                  _isDarkModeEnabled = value;
+                  _currentThemeMode = value ? ThemeMode.dark : ThemeMode.light;
+                  // Panggil callback untuk memberi tahu App tentang perubahan tema
+                  widget.onThemeChanged(_currentThemeMode); // Memanggil callback
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Mode Gelap: ${value ? 'Aktif' : 'Nonaktif'}')),
                   );

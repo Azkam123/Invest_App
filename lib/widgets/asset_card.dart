@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:invest_app/models/crypto_model.dart';
 import 'package:invest_app/pages/asset_detail_page.dart'; // Import halaman detail untuk navigasi
+import 'package:intl/intl.dart'; // Import for date formatting
 
 class AssetCard extends StatelessWidget {
   final Crypto crypto;
@@ -46,7 +47,7 @@ class AssetCard extends StatelessWidget {
               ),
               const SizedBox(width: 15),
 
-              // Nama dan Simbol Kripto
+              // Nama Kripto, Waktu, dan Simbol
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -56,9 +57,29 @@ class AssetCard extends StatelessWidget {
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       overflow: TextOverflow.ellipsis,
                     ),
-                    Text(
-                      crypto.symbol.toUpperCase(),
-                      style: const TextStyle(fontSize: 14, color: Colors.grey),
+                    Row( // Baris baru untuk waktu dan simbol
+                      children: [
+                        const Icon(Icons.access_time, size: 14, color: Colors.grey), // Ikon jam
+                        const SizedBox(width: 4),
+                        StreamBuilder(
+                          stream: Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now()),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData) {
+                              final currentTime = DateFormat('HH:mm:ss').format(snapshot.data!);
+                              return Text(
+                                currentTime,
+                                style: const TextStyle(fontSize: 14, color: Colors.green), // Warna hijau
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          },
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '| ${crypto.symbol.toUpperCase()}', // Simbol setelah waktu
+                          style: const TextStyle(fontSize: 14, color: Colors.grey),
+                        ),
+                      ],
                     ),
                   ],
                 ),
