@@ -38,7 +38,7 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false, // Menghilangkan banner "DEBUG"
-      title: 'InvestApp',
+      title: 'Come Invest',
       // Tema Terang
       theme: ThemeData(
         brightness: Brightness.light,

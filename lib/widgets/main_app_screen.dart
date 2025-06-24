@@ -37,7 +37,7 @@ class MainAppScreen extends StatelessWidget {
               children: <Widget>[
                 TabButton(icon: Icons.home, label: 'Beranda', index: 0),
                 TabButton(icon: Icons.trending_up, label: 'Markets', index: 1),
-                TabButton(icon: Icons.pie_chart, label: 'Portfolio', index: 2), // Atau 'Statistik' jika sudah diubah
+                TabButton(icon: Icons.pie_chart, label: 'statistic', index: 2), // Atau 'Statistik' jika sudah diubah
                 TabButton(icon: Icons.person, label: 'Profile', index: 3),
               ],
             ),

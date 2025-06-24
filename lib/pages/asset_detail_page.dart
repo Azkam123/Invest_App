@@ -5,7 +5,8 @@ import 'package:invest_app/models/crypto_detail_model.dart';
 import 'package:invest_app/services/api_service.dart';
 import 'package:invest_app/utils/constants.dart';
 import 'package:invest_app/models/news_article_model.dart';
-import 'package:url_launcher/url_launcher.dart'; // Pastikan url_launcher sudah di pubspec.yaml
+import 'package:url_launcher/url_launcher.dart';
+import 'package:intl/intl.dart'; // Import for NumberFormat if needed
 
 class AssetDetailPage extends StatefulWidget {
   final Crypto crypto;
@@ -31,6 +32,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
     _cryptoDetailFuture = ApiService().fetchCryptoDetail(widget.crypto.id);
     _tabController = TabController(length: 4, vsync: this);
 
+    // Inisialisasi future untuk berita dan analisis
     _newsFuture = ApiService().fetchCryptoNews(widget.crypto.name);
     _analysisFuture = ApiService().fetchCryptoAnalysis(widget.crypto.name);
   }
@@ -47,18 +49,27 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
     });
   }
 
-  // Fungsi untuk membuka URL
+  // Fungsi untuk membuka URL dengan logging debug yang lebih baik
   Future<void> _launchURL(String url) async {
     final Uri uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      // Pastikan widget masih terpasang sebelum menggunakan context
+    debugPrint('Attempting to launch URL: $url'); // Debugging: Log URL yang akan diluncurkan
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication); // Menggunakan externalApplication
+        debugPrint('Successfully launched URL: $url'); // Debugging: Berhasil meluncurkan URL
+      } else {
+        if (!mounted) return;
+        debugPrint('Could not launch URL: $url. Reason: canLaunchUrl returned false.'); // Debugging: Alasan kegagalan
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Tidak dapat membuka tautan: $url')), // Hardcode teks dengan URL
+        );
+      }
+    } catch (e) {
+      debugPrint('Exception during URL launch for $url: $e'); // Debugging: Tangkap exception
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not open link: $url')),
+        SnackBar(content: Text('Terjadi kesalahan saat membuka tautan: $url, Error: $e')),
       );
-      debugPrint('Could not launch $url'); // Gunakan debugPrint untuk logging
     }
   }
 
@@ -87,7 +98,14 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
               },
             ),
             const SizedBox(width: 8),
-            Text(widget.crypto.name),
+            // Menggunakan Expanded dan Overflow.ellipsis untuk mencegah overflow pada nama kripto
+            Expanded(
+              child: Text(
+                widget.crypto.name,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ),
             const SizedBox(width: 4),
             Text(
               widget.crypto.symbol.toUpperCase(),
@@ -104,10 +122,10 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
-            Tab(text: 'Overview'),
-            Tab(text: 'Technical'),
-            Tab(text: 'News'),
-            Tab(text: 'Analysis'),
+            Tab(text: 'Gambaran Umum'),
+            Tab(text: 'Teknis'),
+            Tab(text: 'Berita'),
+            Tab(text: 'Analisis'),
           ],
           isScrollable: true,
         ),
@@ -118,9 +136,9 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return Center(child: Text('${AppConstants.apiErrorMessage}${snapshot.error}'));
+            return Center(child: Text('Gagal memuat data: ${snapshot.error}'));
           } else if (!snapshot.hasData) {
-            return const Center(child: Text(AppConstants.noDataMessage));
+            return const Center(child: Text('Tidak ada data ditemukan.'));
           } else {
             final detail = snapshot.data!;
             return TabBarView(
@@ -139,29 +157,39 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  '\$${detail.currentPrice.toStringAsFixed(2)}',
-                                  style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                                // Menggunakan Flexible dan overflow.ellipsis untuk harga agar tidak overflow
+                                Flexible(
+                                  child: Text(
+                                    '\$${detail.currentPrice.toStringAsFixed(2)}',
+                                    style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                                Text(
-                                  '${detail.priceChangePercentage24h.toStringAsFixed(2)}%',
-                                  style: TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    color: detail.priceChangePercentage24h >= 0 ? Colors.green : Colors.red,
+                                const SizedBox(width: 10), // Spasi antar harga dan persentase
+                                Flexible( // Menggunakan Flexible dan overflow.ellipsis untuk persentase agar tidak overflow
+                                  child: Text(
+                                    '${detail.priceChangePercentage24h.toStringAsFixed(2)}%',
+                                    style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      color: detail.priceChangePercentage24h >= 0 ? Colors.green : Colors.red,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 8),
                             const Text(
-                              '03:53:04 - Real Time. Currency in USD',
+                              '03:53:04 - Real Time. Mata Uang dalam USD',
                               style: TextStyle(fontSize: 14, color: Colors.grey),
                             ),
                           ],
                         ),
                       ),
-                      const Divider(), // Added 'const' here
+                      const Divider(),
 
                       Container(
                         height: 200,
@@ -170,7 +198,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
                           child: detail.sparklineIn7dPrices != null && detail.sparklineIn7dPrices!.isNotEmpty
                               ? CustomPaint(
                                   painter: SparklinePainter(detail.sparklineIn7dPrices!),
-                                  child: const SizedBox.expand(), // Using const SizedBox.expand()
+                                  child: const SizedBox.expand(),
                                 )
                               : const Text(
                                   'Grafik Harga Akan Muncul di Sini',
@@ -183,23 +211,24 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
+                          _buildTimePeriodButton('1H'),
                           _buildTimePeriodButton('1D'),
                           _buildTimePeriodButton('1W'),
                           _buildTimePeriodButton('1M'),
                           _buildTimePeriodButton('1Y'),
-                          _buildTimePeriodButton('5Y'),
-                          _buildTimePeriodButton('Max'),
+                          _buildTimePeriodButton('Semua'),
                         ],
                       ),
                       const SizedBox(height: 20),
 
+                      // Tombol "Mulai Perdagangan"
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16.0),
                         child: SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: () {
-                              _launchURL(_dupoinTradingUrl); // Start Trading button action
+                              _launchURL(_dupoinTradingUrl);
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.green,
@@ -209,7 +238,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
                               ),
                             ),
                             child: const Text(
-                              'Start Trading',
+                              'Mulai Perdagangan',
                               style: TextStyle(fontSize: 18, color: Colors.white),
                             ),
                           ),
@@ -222,46 +251,27 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildDetailRow('Day\'s Range', '\$${detail.low24h.toStringAsFixed(2)} - \$${detail.high24h.toStringAsFixed(2)}'),
-                            _buildDetailRow('52wk Range', 'N/A'),
-                            _buildDetailRow('Previous Close', 'N/A'),
-                            _buildDetailRow('Market Cap', '\$${detail.marketCap.toStringAsFixed(2)}'),
+                            _buildDetailRow('Rentang Hari', '\$${detail.low24h.toStringAsFixed(2)} - \$${detail.high24h.toStringAsFixed(2)}'),
+                            _buildDetailRow('Rentang 52 Minggu', 'N/A'),
+                            _buildDetailRow('Penutupan Sebelumnya', 'N/A'),
+                            // Memastikan Market Cap juga tidak overflow
+                            _buildDetailRow('Kapitalisasi Pasar', '\$${detail.marketCap.toStringAsFixed(2)}'),
                           ],
                         ),
                       ),
                       const SizedBox(height: 20),
 
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              _launchURL(_dupoinTradingUrl); // Start Trading button action (duplicate)
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
-                              padding: const EdgeInsets.symmetric(vertical: 15),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            child: const Text(
-                              'Start Trading',
-                              style: TextStyle(fontSize: 18, color: Colors.white),
-                            ),
-                          ),
-                        ),
-                      ),
+                      // Tombol "Beli" dan "Jual"
+                      _buildBuySellButtons(),
                       const SizedBox(height: 20),
                     ],
                   ),
                 ),
                 // TAB 2: Technical
                 _buildTechnicalTab(),
-                // TAB 3: News (diperbarui)
+                // TAB 3: News
                 _buildNewsTab(),
-                // TAB 4: Analysis (diperbarui)
+                // TAB 4: Analysis
                 _buildAnalysisTab(),
               ],
             );
@@ -271,7 +281,6 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
     );
   }
 
-  // Metode pembantu untuk tombol periode waktu
   Widget _buildTimePeriodButton(String text) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -286,7 +295,6 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
     );
   }
 
-  // Metode pembantu untuk baris detail
   Widget _buildDetailRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -294,13 +302,66 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: const TextStyle(fontSize: 16, color: Colors.grey)),
-          Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Flexible( // Menggunakan Flexible untuk teks nilai
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              maxLines: 1, // Batasi 1 baris
+              overflow: TextOverflow.ellipsis, // Tampilkan elipsis jika overflow
+            ),
+          ),
         ],
       ),
     );
   }
 
-  // **** Widget untuk Tab Technical ****
+  Widget _buildBuySellButtons() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: ElevatedButton(
+              onPressed: () {
+                _launchURL(_dupoinTradingUrl);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                padding: const EdgeInsets.symmetric(vertical: 15),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text(
+                'Beli',
+                style: TextStyle(fontSize: 18, color: Colors.white),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: ElevatedButton(
+              onPressed: () {
+                _launchURL(_dupoinTradingUrl);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                padding: const EdgeInsets.symmetric(vertical: 15),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text(
+                'Jual',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTechnicalTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -308,29 +369,29 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Rangkuman Teknis',
+            'Ringkasan Teknis',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 15),
-          _buildTechnicalSummaryRow('1 Min.', 'Neutral', isLocked: true),
-          _buildTechnicalSummaryRow('5 Min.', 'Unlock', isLocked: true),
-          _buildTechnicalSummaryRow('15 Min.', 'Unlock', isLocked: true),
-          _buildTechnicalSummaryRow('30 Min.', 'Neutral'),
+          _buildTechnicalSummaryRow('1 Menit', 'Netral', isLocked: true),
+          _buildTechnicalSummaryRow('5 Menit', 'Beli', isLocked: true),
+          _buildTechnicalSummaryRow('15 Menit', 'Jual', isLocked: true),
+          _buildTechnicalSummaryRow('30 Menit', 'Netral'),
           const SizedBox(height: 20),
-          _buildTechnicalSummaryRow('Hourly', 'Neutral'),
-          _buildTechnicalSummaryRow('Daily', 'Strong Sell', isRed: true),
-          _buildTechnicalSummaryRow('Weekly', 'Strong Buy', isGreen: true),
-          _buildTechnicalSummaryRow('Monthly', 'Strong Buy', isGreen: true),
+          _buildTechnicalSummaryRow('Per Jam', 'Netral'),
+          _buildTechnicalSummaryRow('Harian', 'Jual', isRed: true),
+          _buildTechnicalSummaryRow('Mingguan', 'Beli', isGreen: true),
+          _buildTechnicalSummaryRow('Bulanan', 'Beli', isGreen: true),
           const SizedBox(height: 20),
           const Text(
             'Ringkasan',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          _buildSummaryTable('Moving Averages', 'Sell', 'Buy (3)', 'Sell (9)'),
-          _buildSummaryTable('Technical Indicators', 'Neutral', 'Buy (3)', 'Sell (3)'),
+          _buildSummaryTable('Rata-rata Bergerak', 'Jual', 'Beli', 'Netral'),
+          _buildSummaryTable('Indikator Teknis', 'Netral', 'Beli', 'Jual'),
           const SizedBox(height: 20),
           const Text(
-            'Pivot Points',
+            'Titik Pivot',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),
@@ -345,7 +406,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Classic', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text('Klasik', style: TextStyle(fontWeight: FontWeight.bold)),
                     Text('Fibonacci', style: TextStyle(fontWeight: FontWeight.bold)),
                     Text('Camarilla', style: TextStyle(fontWeight: FontWeight.bold)),
                   ],
@@ -411,7 +472,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
             ),
           ),
           const SizedBox(height: 20),
-          _buildBuySellButtons(), // Buy/Sell buttons
+          _buildBuySellButtons(),
         ],
       ),
     );
@@ -419,8 +480,8 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
 
   Widget _buildTechnicalSummaryRow(String time, String status, {bool isLocked = false, bool isGreen = false, bool isRed = false}) {
     Color statusColor = Colors.grey;
-    if (isGreen) statusColor = Colors.green;
-    if (isRed) statusColor = Colors.red;
+    if (status == 'Beli') statusColor = Colors.green;
+    if (status == 'Jual') statusColor = Colors.red;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -445,7 +506,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: isGreen ? Colors.green.withAlpha((255 * 0.2).round()) : (isRed ? Colors.red.withAlpha((255 * 0.2).round()) : Colors.transparent),
+              color: statusColor.withAlpha((255 * 0.2).round()),
               borderRadius: BorderRadius.circular(5),
               border: Border.all(color: statusColor),
             ),
@@ -470,9 +531,9 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildSummaryBox('Sell', sell, Colors.red),
-            _buildSummaryBox('Buy', buy, Colors.green),
-            _buildSummaryBox('Neutral', neutral, Colors.grey),
+            _buildSummaryBox('Jual', '10', Colors.red),
+            _buildSummaryBox('Beli', '3', Colors.green),
+            _buildSummaryBox('Netral', '9', Colors.grey),
           ],
         ),
         const SizedBox(height: 10),
@@ -499,7 +560,6 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
     );
   }
 
-  // **** Widget untuk Tab News (Diperbarui dengan FutureBuilder dan RefreshIndicator) ****
   Widget _buildNewsTab() {
     return RefreshIndicator(
       onRefresh: _refreshNews,
@@ -509,9 +569,9 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return Center(child: Text('Error loading news: ${snapshot.error}'));
+            return Center(child: Text('Terjadi kesalahan: ${snapshot.error}'));
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('No news found.'));
+            return const Center(child: Text('Tidak ada berita ditemukan.'));
           } else {
             final newsArticles = snapshot.data!;
             return ListView.builder(
@@ -538,13 +598,13 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
     return GestureDetector(
       onTap: () async {
         if (articleUrl != null) {
-          final uri = Uri.parse(articleUrl);
+          final Uri uri = Uri.parse(articleUrl);
           if (await canLaunchUrl(uri)) {
-            await launchUrl(uri, mode: LaunchMode.externalApplication); // Menggunakan externalApplication
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
           } else {
             if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Could not open link: $articleUrl')),
+              SnackBar(content: Text('Tidak dapat membuka tautan: $articleUrl')),
             );
             debugPrint('Could not launch news link: $articleUrl');
           }
@@ -553,11 +613,38 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
       child: Card(
         margin: const EdgeInsets.symmetric(vertical: 8.0),
         elevation: 1,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)), // Tambahkan rounded corner
         child: Padding(
           padding: const EdgeInsets.all(12.0),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (imageUrl != null && imageUrl.isNotEmpty)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8.0),
+                  child: Image.network(
+                    imageUrl,
+                    width: 100, // Ukuran disesuaikan
+                    height: 80, // Ukuran disesuaikan
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 100,
+                        height: 80,
+                        color: Colors.grey[300],
+                        child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                      );
+                    },
+                  ),
+                )
+              else
+                Container(
+                  width: 100, // Ukuran disesuaikan
+                  height: 80, // Ukuran disesuaikan
+                  color: Colors.grey[300],
+                  child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                ),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -568,36 +655,13 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 5),
                     Text(
-                      '$source • $time',
+                      '$source - $time',
                       style: const TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 12),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8.0),
-                child: imageUrl != null && imageUrl.isNotEmpty
-                    ? Image.network(
-                        imageUrl,
-                        width: 80,
-                        height: 80,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          width: 80,
-                          height: 80,
-                          color: Colors.grey[300],
-                          child: const Icon(Icons.image_not_supported, color: Colors.grey),
-                        ),
-                      )
-                    : Container(
-                        width: 80,
-                        height: 80,
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.image_not_supported, color: Colors.grey),
-                      ),
               ),
             ],
           ),
@@ -606,7 +670,6 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
     );
   }
 
-  // **** Widget untuk Tab Analysis (Diperbarui dengan FutureBuilder dan RefreshIndicator) ****
   Widget _buildAnalysisTab() {
     return RefreshIndicator(
       onRefresh: _refreshAnalysis,
@@ -616,9 +679,9 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return Center(child: Text('Error loading analysis: ${snapshot.error}'));
+            return Center(child: Text('Terjadi kesalahan: ${snapshot.error}'));
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('No analysis found.'));
+            return const Center(child: Text('Tidak ada analisis ditemukan.'));
           } else {
             final analysisArticles = snapshot.data!;
             return ListView.builder(
@@ -626,15 +689,14 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
               itemCount: analysisArticles.length,
               itemBuilder: (context, index) {
                 final article = analysisArticles[index];
-                // Menggunakan substring(0,1) untuk mengambil huruf pertama sumber sebagai teks avatar
                 String avatarText = article.source.isNotEmpty ? article.source.substring(0, 1).toUpperCase() : '?';
-                String avatarPlaceholder = 'https://via.placeholder.com/100/A0A0A0/FFFFFF?text=$avatarText'; // Warna abu-abu default
+                String avatarPlaceholder = 'https://placehold.co/100x100/A0A0A0/FFFFFF?text=$avatarText';
 
-                return _buildAnalysisItem(
+                return _buildNewsItem( // Menggunakan kembali _buildNewsItem untuk analisis
                   article.title,
-                  article.source, // Menggunakan source sebagai "author" untuk contoh ini
+                  article.source,
                   article.publishedAt,
-                  avatarPlaceholder, // Menggunakan placeholder avatar
+                  article.imageUrl, // Gunakan imageUrl langsung, placeholder hanya untuk fallback
                   article.articleUrl,
                 );
               },
@@ -644,149 +706,35 @@ class _AssetDetailPageState extends State<AssetDetailPage> with SingleTickerProv
       ),
     );
   }
-
-  Widget _buildAnalysisItem(String title, String author, String time, String avatarUrl, String? articleUrl) {
-    return GestureDetector(
-      onTap: () async {
-        if (articleUrl != null) {
-          final uri = Uri.parse(articleUrl);
-          if (await canLaunchUrl(uri)) {
-            await launchUrl(uri, mode: LaunchMode.externalApplication); // Menggunakan externalApplication
-          } else {
-            if (!mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Could not open link: $articleUrl')),
-            );
-            debugPrint('Could not launch analysis link: $articleUrl');
-          }
-        }
-      },
-      child: Card(
-        margin: const EdgeInsets.symmetric(vertical: 8.0),
-        elevation: 1,
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CircleAvatar(
-                radius: 30,
-                backgroundImage: NetworkImage(
-                  avatarUrl,
-                  // onImageError hanya ada pada widget Image, bukan ImageProvider seperti NetworkImage
-                  // Tangani error gambar background pada onBackgroundImageError CircleAvatar
-                ),
-                onBackgroundImageError: (exception, stackTrace) {
-                  debugPrint('Error loading avatar for CircleAvatar: $exception');
-                  // Anda bisa menampilkan placeholder lokal jika diperlukan di sini
-                },
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '$author • $time',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Widget tombol Buy/Sell yang sama digunakan di Technical, News, Analysis
-  Widget _buildBuySellButtons() {
-    return Row(
-      children: [
-        Expanded(
-          child: ElevatedButton(
-            onPressed: () {
-              _launchURL('$_dupoinTradingUrl?action=buy'); // Buy button action
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              padding: const EdgeInsets.symmetric(vertical: 15),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text(
-              'Buy',
-              style: TextStyle(fontSize: 18, color: Colors.white),
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: ElevatedButton(
-            onPressed: () {
-              _launchURL('$_dupoinTradingUrl?action=sell'); // Sell button action
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              padding: const EdgeInsets.symmetric(vertical: 15),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text(
-              'Sell',
-              style: TextStyle(fontSize: 18, color: Colors.white),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 }
 
-// Custom Painter (Pastikan ini ada di bagian bawah file yang sama, di luar kelas widget lainnya)
+// SparklinePainter class (tetap sama)
 class SparklinePainter extends CustomPainter {
-  final List<double> sparklineData;
-
-  SparklinePainter(this.sparklineData);
+  final List<double> prices;
+  SparklinePainter(this.prices);
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (sparklineData.isEmpty) return;
+    if (prices.isEmpty) return;
 
     final paint = Paint()
-      ..color = Colors.blueAccent
+      ..color = Colors.blue
       ..strokeWidth = 2.0
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
+      ..style = PaintingStyle.stroke;
 
     final path = Path();
 
-    double minY = sparklineData.reduce((a, b) => a < b ? a : b);
-    double maxY = sparklineData.reduce((a, b) => a > b ? a : b);
+    final minPrice = prices.reduce((a, b) => a < b ? a : b);
+    final maxPrice = prices.reduce((a, b) => a > b ? a : b);
 
-    double scaleY = (maxY - minY) == 0 ? 0 : size.height / (maxY - minY);
-    double stepX = size.width / (sparklineData.length - 1);
+    final priceRange = maxPrice == minPrice ? 1.0 : (maxPrice - minPrice);
 
-    path.moveTo(
-      0,
-      size.height - (sparklineData[0] - minY) * scaleY,
-    );
+    path.moveTo(0, size.height - ((prices[0] - minPrice) / priceRange) * size.height);
 
-    for (int i = 1; i < sparklineData.length; i++) {
-      path.lineTo(
-        i * stepX,
-        size.height - (sparklineData[i] - minY) * scaleY,
-      );
+    for (int i = 0; i < prices.length; i++) {
+      final x = (i / (prices.length - 1)) * size.width;
+      final y = size.height - ((prices[i] - minPrice) / priceRange) * size.height;
+      path.lineTo(x, y);
     }
 
     canvas.drawPath(path, paint);
@@ -794,6 +742,6 @@ class SparklinePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return oldDelegate is SparklinePainter && oldDelegate.sparklineData != sparklineData;
+    return false;
   }
 }
